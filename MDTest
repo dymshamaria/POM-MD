@@ -1,0 +1,126 @@
+package school.redrover;
+
+import org.openqa.selenium.By;
+import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
+import school.redrover.model.HomePage;
+import school.redrover.model.OrganizationFolderConfigurationPage;
+import school.redrover.model.MDPage;
+import school.redrover.runner.BaseTest;
+
+import java.util.Random;
+
+
+public class MDTest extends BaseTest {
+
+    private static final String PROJECT_NAME = "Organization Folder";
+
+    @DataProvider(name = "random unsafe character")
+    public Object[][] provideUnsafeCharacters() {
+        String[] wrongCharacters = {"!", "@", "#", "$", "%", "^", "&", "*", "?", "|", ">", "[", "]"};
+        int randomIndex = new Random().nextInt(wrongCharacters.length);
+        return new Object[][]{{wrongCharacters[randomIndex]}};
+    }
+
+    private String getName(int nameLength) {
+        return "a".repeat(nameLength);
+    }
+
+    @Test
+    public void testCreateOrganizationFolderWithValidName() {
+        HomePage homepage = new MDPage(getDriver())
+                .clickNewItem()
+                .typeItemName(PROJECT_NAME)
+                .selectOrganizationFolder()
+                .clickOk(new OrganizationFolderConfigurationPage(getDriver()))
+                .goHomePage();
+
+        Assert.assertTrue(homepage.getJobList().contains(PROJECT_NAME));
+    }
+
+    @Test(dependsOnMethods = "testCreateOrganizationFolderWithValidName")
+    public void testCreateOrganizationFolderWithExistingName() {
+        String errorMessage = new MDPage(getDriver())
+                .clickNewItem()
+                .typeItemName(PROJECT_NAME)
+                .selectOrganizationFolder()
+                .getInvalidNameErrorMessage();
+
+        Assert.assertEquals(errorMessage, "» A job already exists with the name ‘" + PROJECT_NAME + "’");
+    }
+
+    @Test(dataProvider = "random unsafe character")
+    public void testCreateProjectWithUnsafeCharacters(String unsafeChar) {
+        String errorMessage = new MDPage(getDriver())
+                .clickNewItem()
+                .typeItemName(unsafeChar)
+                .selectOrganizationFolder()
+                .getInvalidNameErrorMessage();
+
+        Assert.assertEquals(errorMessage, "» ‘" + unsafeChar + "’ is an unsafe character");
+    }
+
+    @Test
+    public void testCreateOrganizationFolderWithEmptyName() {
+        String errorMessage = new MDPage(getDriver())
+                .clickNewItem()
+                .selectOrganizationFolder()
+                .getRequiredNameErrorMessage();
+
+        Assert.assertEquals(errorMessage, "» This field cannot be empty, please enter a valid name");
+        Assert.assertFalse(getDriver().findElement(By.id("ok-button")).isEnabled(), "OK button should NOT be enabled");
+    }
+
+    @Test
+    public void testCreateOrganizationFolderWithSpaceInsteadOfName() {
+        final String nameWithSpace = " ";
+        String errorMessage = new MDPage(getDriver())
+                .clickNewItem()
+                .typeItemName(nameWithSpace)
+                .selectOrganizationFolder()
+                .clickOk(new MDPage(getDriver()))
+                .getNoNameErrorMessage();
+
+        Assert.assertEquals(errorMessage, "No name is specified");
+    }
+
+    @Test
+    public void testCreateOrganizationFolderWithLongName() {
+        final String longName = getName(256);
+        String errorMessage = new MDPage(getDriver())
+                .clickNewItem()
+                .typeItemName(longName)
+                .selectOrganizationFolder()
+                .clickOk(new MDPage(getDriver()))
+                .getRequestErrorMessage();
+
+        Assert.assertEquals(errorMessage, "A problem occurred while processing the request.");
+    }
+
+    @Test
+    public void testCreateOrganizationFolderWithInvalidNameWithTwoDots() {
+        final String name = "..";
+        String errorMessage = new MDPage(getDriver())
+                .clickNewItem()
+                .typeItemName(name)
+                .selectOrganizationFolder()
+                .getInvalidNameErrorMessage();
+
+
+        Assert.assertEquals(errorMessage, "» “..” is not an allowed name");
+        Assert.assertFalse(getDriver().findElement(By.id("ok-button")).isEnabled(), "OK button should NOT be enabled");
+    }
+
+    @Test
+    public void testCreateOrganizationFolderWithInvalidNameWithDotAtEnd() {
+        final String name = "name.";
+        String errorMessage = new MDPage(getDriver())
+                .clickNewItem()
+                .typeItemName(name)
+                .selectOrganizationFolder()
+                .getInvalidNameErrorMessage();
+
+        Assert.assertEquals(errorMessage, "» A name cannot end with ‘.’");
+    }
+}
