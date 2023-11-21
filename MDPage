@@ -1,0 +1,80 @@
+package school.redrover.model;
+
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.FindBy;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import school.redrover.model.base.BasePage;
+
+import java.util.List;
+
+
+public class MDPage extends BasePage {
+
+    @FindBy(name = "name")
+    private WebElement inputName;
+
+    @FindBy(id = "ok-button")
+    private WebElement okButton;
+
+    @FindBy(id = "itemname-invalid")
+    private WebElement invalidNameErrorMessage;
+
+    @FindBy(id = "itemname-required")
+    private WebElement requiredNameErrorMessage;
+
+    @FindBy(tagName = "p")
+    private WebElement noNameErrorMessage;
+
+    @FindBy(tagName = "h2")
+    private WebElement requestErrorMessage;
+
+    public MDPage(WebDriver driver) {
+        super(driver);
+    }
+
+    public MDPage clickNewItem() {
+        getDriver().findElement(By.xpath("//a[@href='/view/all/newJob']")).click();
+        return new MDPage(getDriver());
+    }
+
+    public MDPage typeItemName(String name) {
+        inputName.sendKeys(name);
+
+        return this;
+    }
+
+    public MDPage selectOrganizationFolder() {
+        getDriver().findElement(By.xpath("//li[@class = 'jenkins_branch_OrganizationFolder']")).click();
+        return this;
+    }
+
+    public <T> T clickOk(T page) {
+        okButton.click();
+        return page;
+    }
+
+    public List<String> getJobList() {
+        List<WebElement> elementList = getDriver().findElements(By.xpath("//tr/td/a[contains(@class, 'jenkins-table__link')]/span[1]"));
+        List<String> resultList = elementList.stream().map(WebElement::getText).toList();
+
+        return resultList;
+    }
+
+    public String getInvalidNameErrorMessage() {
+        return getWait2().until(ExpectedConditions.visibilityOf(invalidNameErrorMessage)).getText();
+    }
+
+    public String getRequiredNameErrorMessage() {
+        return getWait2().until(ExpectedConditions.visibilityOf(requiredNameErrorMessage)).getText();
+    }
+
+    public String getNoNameErrorMessage() {
+        return getWait2().until(ExpectedConditions.visibilityOf(noNameErrorMessage)).getText();
+    }
+
+    public String getRequestErrorMessage() {
+        return getWait2().until(ExpectedConditions.visibilityOf(requestErrorMessage)).getText();
+    }
+}
